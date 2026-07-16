@@ -195,3 +195,11 @@ class TestContextRetrieverInit:
         mock_query_builder = MagicMock()
         retriever.set_query_builder(mock_query_builder)
         assert retriever.query_builder == mock_query_builder
+
+    def test_ntrs_service_type(self):
+        from fact_reasoner.core.retriever import Retriever
+
+        retriever = Retriever(service_type="ntrs", top_k=5)
+        assert retriever.service_type == "ntrs"
+        assert retriever.top_k == 5
+        assert retriever.ntrs_retriever is not None
