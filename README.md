@@ -146,6 +146,8 @@ export SERPER_API_KEY=your_serper_api_key
 export RITS_API_KEY=your_RITS_api_key
 ```
 
+Note: NTRS retrieval (`service_type="ntrs"`) uses the public NASA STI Repository OpenAPI and does not require an API key.
+
 ## Quick Start
 
 ### Basic Usage
@@ -173,7 +175,7 @@ query_builder = QueryBuilder(backend)
 atom_extractor = Atomizer(backend)
 atom_reviser = Reviser(backend)
 retriever = ContextRetriever(
-    service_type="google",  # or "wikipedia", "chromadb"
+    service_type="google",  # or "wikipedia", "chromadb", "ntrs"
     top_k=5,
     fetch_text=True,
     query_builder=query_builder,
@@ -238,11 +240,12 @@ results, marginals = pipeline.score()
 |-----------|-------|-------------|
 | **Atomizer** | `Atomizer` | Decomposes text into atomic claims using few-shot prompting |
 | **Reviser** | `Reviser` | Decontextualizes atoms by resolving pronouns and vague references |
-| **Retriever** | `ContextRetriever` | Retrieves relevant evidence from Wikipedia, Google, or vector stores |
+| **Retriever** | `ContextRetriever` | Retrieves relevant evidence from Wikipedia, Google, NTRS, or vector stores |
 | **Summarizer** | `ContextSummarizer` | Summarizes retrieved contexts with respect to specific atoms |
 | **NLI Extractor** | `NLIExtractor` | Predicts entailment/contradiction/neutral relationships |
 | **Fact Graph** | `FactGraph` | Graph representation of atoms, contexts, and their relationships |
 | **Search API** | `SearchAPI` | Google Search via Serper API with SQLite caching |
+| **NTRS API** | `NTRSAPI` | NASA STI Repository (NTRS) search via the public NTRS OpenAPI |
 
 ### Pipeline Flow
 
@@ -328,6 +331,17 @@ retriever = ContextRetriever(
     top_k=5
 )
 ```
+
+### NTRS (NASA STI Repository)
+
+```python
+retriever = ContextRetriever(
+    service_type="ntrs",
+    top_k=5
+)
+```
+
+Retrieves scientific and technical reports from the [NASA STI Repository (NTRS)](https://ntrs.nasa.gov/api/openapi/) via its public OpenAPI. No API key is required. The context `text`/`snippet` is populated from the report abstract; records without an abstract are skipped since they do not provide usable evidence. `cache_dir` and `fetch_text` are not used by this backend.
 
 ## Baseline Methods
 

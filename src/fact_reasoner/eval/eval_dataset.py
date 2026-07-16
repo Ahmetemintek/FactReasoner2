@@ -69,7 +69,7 @@ if __name__ == "__main__":
         '--service_type',
         type=str,
         default="google",
-        help="Service type (wikipedia, chromadb, google)."
+        help="Service type (wikipedia, chromadb, google, ntrs)."
     )
 
     parser.add_argument(
