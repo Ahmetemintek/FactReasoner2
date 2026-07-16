@@ -46,6 +46,7 @@ from fact_reasoner.core.summarizer import ContextSummarizer
 from fact_reasoner.core.query_builder import QueryBuilder
 from fact_reasoner.core.base import Atom, Context
 from fact_reasoner.search_api import SearchAPI
+from fact_reasoner.ntrs_api import NTRSAPI
 
 DEFAULT_COLLECTION_NAME = "lit_agent_demo"
 DEFAULT_DB_PATH = "/tmp/nasa_contrib/accelerated-discovery/chroma_db"
@@ -345,7 +346,7 @@ class Retriever:
 
         Args:
             service_type: str
-                The type of the context retriever (chromadb, wikipedia, google)
+                The type of the context retriever (chromadb, wikipedia, google, ntrs)
             collection_name: str
                 Name of the collection of documents stored in the vectorstore
             persist_directory: str
@@ -380,9 +381,10 @@ class Retriever:
         self.chromadb_retriever = None
         self.langchain_retriever = None
         self.google_retriever = None
+        self.ntrs_retriever = None
         self.in_memory_vectorstore = None
 
-        assert self.service_type in ["chromadb", "wikipedia", "google"]
+        assert self.service_type in ["chromadb", "wikipedia", "google", "ntrs"]
 
         if self.service_type == "chromadb":
             self.chromadb_retriever = ChromaReader(
@@ -401,6 +403,9 @@ class Retriever:
                 self.in_memory_vectorstore = InMemoryVectorStore(
                     HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
                 )
+        elif self.service_type == "ntrs":
+            # NTRS is a public API and does not require an API key or cache_dir.
+            self.ntrs_retriever = NTRSAPI()
         else:
             raise ValueError(f"Unknown retriever service: {self.service_type}")
         
