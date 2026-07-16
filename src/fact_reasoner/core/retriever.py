@@ -570,6 +570,35 @@ class Retriever:
 
             results.extend(passages)
             logger.info(f"Retrieved {len(results)} results for query.")
+        elif self.service_type == "ntrs":
+            logger.info(f"Retrieving {self.top_k} search results for: {text} (service: {self.service_type})")
+
+            if not text:
+                return results # empty list
+
+            # Generate the query text if there is a query builder
+            if self.query_builder is not None:
+                query_text = self.query_builder.run(text)
+            else:
+                query_text = text
+
+            # Truncate the text if too long
+            query_text = query_text if len(query_text) < 2048 else query_text[:2048]
+            logger.info(f"Using query text: {query_text}")
+
+            # Get the search results. NTRS records without an abstract are
+            # already filtered out by NTRSAPI.get_snippets, so no fallback
+            # padding of empty-content entries is needed here.
+            search_results = self.ntrs_retriever.get_snippets([query_text], top_k=self.top_k)
+            search_hits = search_results[query_text]
+
+            passages = [
+                dict(title=hit["title"], text=hit["snippet"], snippet=hit["snippet"], link=hit["link"])
+                for hit in search_hits[:self.top_k]
+            ]
+
+            results.extend(passages)
+            logger.info(f"Retrieved {len(results)} results for query.")
         return results
            
 
