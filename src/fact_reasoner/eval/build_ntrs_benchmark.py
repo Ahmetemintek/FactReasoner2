@@ -42,6 +42,7 @@ import re
 import copy
 import json
 import argparse
+import unicodedata
 
 from dotenv import load_dotenv
 
@@ -112,6 +113,49 @@ _TIER_CONTENT = 1   # remaining domain content words
 _TIER_DEMOTED = 2   # weak-retrieval terms, used only if budget remains
 
 
+def strip_phrase_quotes(query: str) -> str:
+    """
+    Remove exact-phrase quoting from a QueryBuilder query, keeping every word.
+
+    Serper rejects exact-phrase queries with HTTP 400 ("Query pattern not
+    allowed for free accounts") when they are combined with the `num`
+    parameter that SearchAPI always sends, which aborts the whole generation
+    run. Quoting is common on precise instrument specifications, where the
+    LLM tends to lock exact figures and part names into phrases.
+
+    Dropping only the quote characters keeps every term the QueryBuilder chose
+    and merely stops them from being phrase-locked, so the query still carries
+    the same concepts. It is applied to the shared query before either backend
+    sees it, so both backends continue to receive the same query. NTRS keyword
+    queries are unaffected either way: `to_keyword_query` already discards
+    quote characters while tokenizing.
+
+    Args:
+        query: str
+            The full QueryBuilder query.
+
+    Returns:
+        str: The query with exact-phrase quoting removed.
+    """
+
+    return " ".join(query.replace('"', " ").split())
+
+
+def _fold_to_ascii(text: str) -> str:
+    """
+    Map accented characters onto their ASCII base letters (e.g. "Seitah" for
+    "Séítah").
+
+    `to_keyword_query` tokenizes by discarding every non-alphanumeric
+    character, which would silently delete accented letters from the middle of
+    a word and leave an unsearchable fragment. Folding first preserves the
+    term in the unaccented form NTRS records use for these place names.
+    """
+
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
 def _is_anchor_word(token: str) -> bool:
     """
     Recognize high-confidence retrieval anchors: named entities (missions,
@@ -136,8 +180,9 @@ def to_keyword_query(query: str, max_terms: int = 4) -> str:
     NTRS AND-matches every individual word, so `max_terms` is a *word* budget.
     The selection runs in three passes:
 
-      1. Clean: drop search operators, punctuation, possessives ("Jupiter's"
-         -> "Jupiter") and stopwords; de-duplicate.
+      1. Clean: fold accented letters onto ASCII ("Séítah" -> "Seitah"); drop
+         search operators, punctuation, possessives ("Jupiter's" ->
+         "Jupiter") and stopwords; de-duplicate.
       2. Group and classify: consecutive anchor words form one atomic unit
          ("Apollo 11", "Sea of Tranquility" -- an interior "of" and trailing
          numeric designators stay with the name). Each unit is tiered:
@@ -170,7 +215,7 @@ def to_keyword_query(query: str, max_terms: int = 4) -> str:
 
     # Pass 1: clean.
     tokens = []
-    for raw in query.split():
+    for raw in _fold_to_ascii(query).split():
         # Drop search operators (site:, intitle:, quoted phrases, booleans).
         if ":" in raw or raw in ("OR", "AND", "|"):
             continue
@@ -312,7 +357,7 @@ def build_datasets(
 
     for record_idx, record in enumerate(records):
         for atom_idx, atom in enumerate(record["atoms"]):
-            query = query_builder.run(atom["text"])
+            query = strip_phrase_quotes(query_builder.run(atom["text"]))
             ntrs_query = to_keyword_query(query, max_terms=ntrs_max_terms)
             print(f"[{record.get('topic')}] {atom['id']}: query={query!r}")
             if "ntrs" in services:
