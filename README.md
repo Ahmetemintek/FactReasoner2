@@ -64,6 +64,7 @@ FactReasoner addresses hallucination detection through a principled five-stage p
    - **Wikipedia**: Using LangChain's WikipediaRetriever
    - **Google Search**: Via Serper API with optional full-page content extraction
    - **ChromaDB**: Custom vector stores with semantic search
+   - **NTRS**: NASA Technical Reports Server via its public OpenAPI
 
 4. **NLI-based Verification (NLI Extractor)**: Natural Language Inference (NLI) is used to determine the relationship between each atom and its retrieved contexts:
    - **Entailment**: The context supports/implies the atom
@@ -99,7 +100,7 @@ Traditional factuality methods (like FactScore) make independent binary decision
 ## Key Features
 
 - **Probabilistic Factuality Scoring**: Returns calibrated probability estimates rather than binary verdicts
-- **Multiple Knowledge Sources**: Support for Wikipedia, Google Search API, and ChromaDB vector stores
+- **Multiple Knowledge Sources**: Support for Wikipedia, Google Search API, ChromaDB vector stores, and the NASA Technical Reports Server (NTRS)
 - **Baseline Implementations**: Includes FactScore and VeriScore methods for comparison
 - **Modular Architecture**: Each component (atomizer, retriever, NLI, summarizer) can be configured independently
 - **Async Support**: Batch processing with asynchronous LLM calls for efficiency
@@ -484,6 +485,7 @@ See the `docs/` directory for complete examples:
 | `docs/examples/core/ex_nli.py` | NLI extraction |
 | `docs/examples/core/ex_retriever.py` | Context retrieval |
 | `docs/examples/core/ex_summarizer.py` | Context summarization |
+| `docs/examples/eval/ex_ntrs_benchmark.md` | NASA retrieval benchmark |
 
 ## Citation
 
